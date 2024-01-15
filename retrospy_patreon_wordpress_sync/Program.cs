@@ -25,7 +25,9 @@ namespace retrospy_patreon_wordpress_sync
         {
             MainAsync(args).GetAwaiter().GetResult();
 
-
+            MappingAgent wp = new();
+            if (patreonClient != null)
+                wp.ValidateAndMoveSubscribers(patreonClient).GetAwaiter().GetResult();
 
             while (RefreshingRefreshToken) ;
             patreonClient?.Dispose();
