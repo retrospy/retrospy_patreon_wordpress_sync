@@ -65,75 +65,90 @@ namespace retrospy_patreon_wordpress_sync
                 foreach (var user in users)
                 {
                     numProcessed++;
-                    //response = wcHttpClient.GetAsync("/wp-json/wp/v2/users/" + user.id + "?context=edit").Result;
-                    //using (StreamReader stream = new StreamReader(response.Content.ReadAsStreamAsync().Result))
-                    //{
-                    //    responseStr = stream.ReadToEnd();
-                    //}
-                    //userData = JsonConvert.DeserializeObject(responseStr);
-             //       if (userData?.meta.twitchpress_twitch_id != string.Empty && userData?.meta.twitchpress_twitch_id != me.Users[0].Id)
-            //        {
-            //            bool noMatch = true;
-            //            bool update = false;
-            //            foreach (var sub in allSubscriptions.Data)
-            //            {
-            //                if (userData?.meta.twitchpress_twitch_id == sub.UserId)
-            //                {
-            //                    userData.roles.Remove("twitchpress_role_subplan_1000");
-            //                    userData.roles.Remove("twitchpress_role_subplan_2000");
-            //                    userData.roles.Remove("twitchpress_role_subplan_3000");
+                    bool noKey = true;
+                    foreach (var data in user.meta_data)
+                    {
+                        if (data.key.ToString() == "patreon_latest_patron_info")
+                        {
+                            noKey = false;
+                            bool noMatch = true;
+                            bool update = false;
+                            foreach (var patron in allPatrons.Resources)
+                            {
+                                if (patron.Email == data.value.data.attributes.email.ToString() && patron.PatronStatus == Patreon.Net.Models.Member.PatronStatusValue.ActivePatron)
+                                {
+                                    response = wcHttpClient.GetAsync("/wp-json/wp/v2/users/" + user.id + "?context=edit").Result;
+                                    using (StreamReader stream = new StreamReader(response.Content.ReadAsStreamAsync().Result))
+                                    {
+                                        responseStr = stream.ReadToEnd();
+                                    }
+                                    userData = JsonConvert.DeserializeObject(responseStr);
 
-            //                    if (sub.Tier == "1000")
-            //                    {
-            //                        userData.roles.Add("twitchpress_role_subplan_1000");
-            //                    }
-            //                    else if (sub.Tier == "2000")
-            //                    {
-            //                        userData.roles.Add("twitchpress_role_subplan_2000");
-            //                    }
-            //                    else if (sub.Tier == "3000")
-            //                    {
-            //                        userData.roles.Add("twitchpress_role_subplan_3000");
-            //                    }
-            //                    noMatch = false;
-            //                    update = true;
-            //                    break;
-            //                }
-            //            }
+                                    userData.roles.Remove("patreon_role_subplan_300");
+                                    userData.roles.Remove("patreon_role_subplan_700");
+                                    userData.roles.Remove("patreon_role_subplan_2500");
 
-            //            if (noMatch &&
-            //                (userData?.roles.Contains("twitchpress_role_subplan_1000")
-            //                || userData?.roles.Contains("twitchpress_role_subplan_2000")
-            //                || userData?.roles.Contains("twitchpress_role_subplan_3000")))
-            //            {
-            //                userData?.roles.Remove("twitchpress_role_subplan_1000");
-            //                userData?.roles.Remove("twitchpress_role_subplan_2000");
-            //                userData?.roles.Remove("twitchpress_role_subplan_3000");
-            //                update = true;
-            //            }
+                                    if (patron.CurrentlyEntitledAmountCents == 300)
+                                    {
+                                        userData.roles.Add("patreon_role_subplan_300");
+                                    }
+                                    else if (patron.CurrentlyEntitledAmountCents == 700)
+                                    {
+                                        userData.roles.Add("patreon_role_subplan_700");
+                                    }
+                                    else if (patron.CurrentlyEntitledAmountCents == 2500)
+                                    {
+                                        userData.roles.Add("patreon_role_subplan_2500");
+                                    }
+                                    noMatch = false;
+                                    update = true;
+                                    break;
+                                }
+                            }
 
-            //            if (update)
-            //            {
-            //                var s = new StringContent("{\n \"roles\": " + userData?.roles.ToString() + "\n}");
-            //                s.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-            //                response = wcHttpClient.PutAsync("/wp-json/wp/v2/users/" + user.id, s).Result;
-            //            }
-            //        }
-            //        else
-            //        {
-            //            if (userData?.roles.Contains("twitchpress_role_subplan_1000")
-            //               || userData?.roles.Contains("twitchpress_role_subplan_2000")
-            //               || userData?.roles.Contains("twitchpress_role_subplan_3000"))
-            //            {
-            //                userData?.roles.Remove("twitchpress_role_subplan_1000");
-            //                userData?.roles.Remove("twitchpress_role_subplan_2000");
-            //                userData?.roles.Remove("twitchpress_role_subplan_3000");
+                            if (noMatch &&
+                                (userData?.roles.Contains("patreon_role_subplan_300")
+                                || userData?.roles.Contains("patreon_role_subplan_700")
+                                || userData?.roles.Contains("patreon_role_subplan_2500")))
+                            {
+                                userData?.roles.Remove("patreon_role_subplan_300");
+                                userData?.roles.Remove("patreon_role_subplan_700");
+                                userData?.roles.Remove("patreon_role_subplan_2500");
+                                update = true;
+                            }
 
-            //                var s = new StringContent("{\n \"roles\": " + userData?.roles.ToString() + "\n}");
-            //                s.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-            //                response = wcHttpClient.PutAsync("/wp-json/wp/v2/users/" + user.id, s).Result;
-            //            }
-            //        }
+                            if (update)
+                            {
+                                var s = new StringContent("{\n \"roles\": " + userData?.roles.ToString() + "\n}");
+                                s.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                                response = wcHttpClient.PutAsync("/wp-json/wp/v2/users/" + user.id, s).Result;
+                            }
+                            break;
+                        }
+                    }
+
+                    if (noKey)
+                    {
+                        response = wcHttpClient.GetAsync("/wp-json/wp/v2/users/" + user.id + "?context=edit").Result;
+                        using (StreamReader stream = new StreamReader(response.Content.ReadAsStreamAsync().Result))
+                        {
+                            responseStr = stream.ReadToEnd();
+                        }
+                        userData = JsonConvert.DeserializeObject(responseStr);
+
+                        if (userData?.roles.Contains("patreon_role_subplan_300")
+                           || userData?.roles.Contains("patreon_role_subplan_700")
+                           || userData?.roles.Contains("patreon_role_subplan_2500"))
+                        {
+                            userData?.roles.Remove("patreon_role_subplan_300");
+                            userData?.roles.Remove("patreon_role_subplan_700");
+                            userData?.roles.Remove("patreon_role_subplan_2500");
+
+                            var s = new StringContent("{\n \"roles\": " + userData?.roles.ToString() + "\n}");
+                            s.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                            response = wcHttpClient.PutAsync("/wp-json/wp/v2/users/" + user.id, s).Result;
+                        }
+                    }
                 }
             } while (cont);
 
