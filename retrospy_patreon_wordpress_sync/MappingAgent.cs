@@ -57,7 +57,7 @@ namespace retrospy_patreon_wordpress_sync
         {
             foreach (var user in teamMembers)
             {
-                if (user.Login == username)
+                if (user.Login == username && username != "zoggins")
                 {
                     client.Organization.Team.RemoveMembership(teamId, username);
                     return;
@@ -164,7 +164,7 @@ namespace retrospy_patreon_wordpress_sync
                             {
                                 if (userData?.roles.Contains("patreon_role_subplan_300")
                                     || userData?.roles.Contains("patreon_role_subplan_700")
-                                    || userData?.roles.Contains("patreon_role_subplan_2500")))
+                                    || userData?.roles.Contains("patreon_role_subplan_2500"))
                                 {
                                     userData?.roles.Remove("patreon_role_subplan_300");
                                     userData?.roles.Remove("patreon_role_subplan_700");
@@ -186,10 +186,6 @@ namespace retrospy_patreon_wordpress_sync
                                 response = wcHttpClient.PutAsync("/wp-json/wp/v2/users/" + user.id, s).Result;
                             }
                             break;
-                        }
-                        else if (data.key.ToString() == "github_login")
-                        {
-                            int i = 0;
                         }
                     }
 
