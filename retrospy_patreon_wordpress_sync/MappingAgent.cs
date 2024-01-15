@@ -1,11 +1,5 @@
 ﻿using Newtonsoft.Json;
 using Patreon.Net;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace retrospy_patreon_wordpress_sync
 {
@@ -84,21 +78,21 @@ namespace retrospy_patreon_wordpress_sync
                                     }
                                     userData = JsonConvert.DeserializeObject(responseStr);
 
-                                    userData.roles.Remove("patreon_role_subplan_300");
-                                    userData.roles.Remove("patreon_role_subplan_700");
-                                    userData.roles.Remove("patreon_role_subplan_2500");
+                                    userData?.roles.Remove("patreon_role_subplan_300");
+                                    userData?.roles.Remove("patreon_role_subplan_700");
+                                    userData?.roles.Remove("patreon_role_subplan_2500");
 
                                     if (patron.CurrentlyEntitledAmountCents == 300)
                                     {
-                                        userData.roles.Add("patreon_role_subplan_300");
+                                        userData?.roles.Add("patreon_role_subplan_300");
                                     }
                                     else if (patron.CurrentlyEntitledAmountCents == 700)
                                     {
-                                        userData.roles.Add("patreon_role_subplan_700");
+                                        userData?.roles.Add("patreon_role_subplan_700");
                                     }
                                     else if (patron.CurrentlyEntitledAmountCents == 2500)
                                     {
-                                        userData.roles.Add("patreon_role_subplan_2500");
+                                        userData?.roles.Add("patreon_role_subplan_2500");
                                     }
                                     noMatch = false;
                                     update = true;
