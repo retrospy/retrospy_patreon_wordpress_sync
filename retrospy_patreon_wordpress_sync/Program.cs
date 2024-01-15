@@ -21,7 +21,7 @@ namespace retrospy_patreon_wordpress_sync
             Config.PatreonClientId = Environment.GetEnvironmentVariable("PatreonClientId") ?? string.Empty;
             Config.PatreonRefreshToken = Environment.GetEnvironmentVariable("PatreonRefreshToken") ?? string.Empty;
 
-            RefreshToken(args);
+            //RefreshToken(args);
 
             patreonClient = new PatreonClient(Config.PatreonClientAccessToken, Config.PatreonRefreshToken, Config.PatreonClientId);
 

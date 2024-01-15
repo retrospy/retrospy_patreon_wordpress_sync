@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Octokit;
 using Patreon.Net;
 
 namespace retrospy_patreon_wordpress_sync
@@ -26,6 +27,44 @@ namespace retrospy_patreon_wordpress_sync
         private dynamic? users;
         private dynamic? userData;
 
+        private string? FindGitHubUserName(dynamic meta_data)
+        {
+            foreach(var data in meta_data)
+            {
+                if (data.key.ToString() == "github_login")
+                {
+                    return data.value.ToString();
+                }
+            }
+
+            return null;
+        }
+
+        private void GitHubAdd(string username, GitHubClient client, IReadOnlyList<User> teamMembers, int teamId)
+        {
+            foreach(var user in teamMembers)
+            {
+                if (user.Login == username)
+                {
+                    return;
+                }
+            }
+
+            client.Organization.Team.AddOrEditMembership(teamId, username, new UpdateTeamMembership(TeamRole.Member));
+        }
+
+        private void GitHubRemove(string username, GitHubClient client, IReadOnlyList<User> teamMembers, int teamId)
+        {
+            foreach (var user in teamMembers)
+            {
+                if (user.Login == username)
+                {
+                    client.Organization.Team.RemoveMembership(teamId, username);
+                    return;
+                }
+            }
+        }
+
         public async Task ValidateAndMoveSubscribers(PatreonClient client)
         {
 
@@ -34,7 +73,22 @@ namespace retrospy_patreon_wordpress_sync
             var me = campaigns.Resources[0].Id;
 
             var allPatrons = await client.GetCampaignMembersAsync(me, Includes.All);
-          
+            
+            GitHubClient ghClient = new GitHubClient(
+                new Octokit.ProductHeaderValue("RetroSpy"));
+
+            ghClient.Credentials = new Credentials(Environment.GetEnvironmentVariable("GitHubPatreonLogin"));
+            var teams = await ghClient.Organization.Team.GetAll("retrospy");
+            int teamId = 0;
+            foreach(var team in teams)
+            {
+                if (team.Name == "Patrons")
+                {
+                    teamId = team.Id;
+                }
+            }
+            var teamMembers = await ghClient.Organization.Team.GetAllMembers(teamId);
+
             bool cont = false;
             int numProcessed = 0;
             int page = 1;
@@ -71,6 +125,12 @@ namespace retrospy_patreon_wordpress_sync
                             {
                                 if (patron.Email == data.value.data.attributes.email.ToString() && patron.PatronStatus == Patreon.Net.Models.Member.PatronStatusValue.ActivePatron)
                                 {
+                                    var githubName = FindGitHubUserName(user.meta_data);
+                                    if (githubName != null)
+                                    {
+                                        GitHubAdd(githubName, ghClient, teamMembers, teamId);
+                                    }
+
                                     response = wcHttpClient.GetAsync("/wp-json/wp/v2/users/" + user.id + "?context=edit").Result;
                                     using (StreamReader stream = new StreamReader(response.Content.ReadAsStreamAsync().Result))
                                     {
@@ -100,15 +160,23 @@ namespace retrospy_patreon_wordpress_sync
                                 }
                             }
 
-                            if (noMatch &&
-                                (userData?.roles.Contains("patreon_role_subplan_300")
-                                || userData?.roles.Contains("patreon_role_subplan_700")
-                                || userData?.roles.Contains("patreon_role_subplan_2500")))
+                            if (noMatch)
                             {
-                                userData?.roles.Remove("patreon_role_subplan_300");
-                                userData?.roles.Remove("patreon_role_subplan_700");
-                                userData?.roles.Remove("patreon_role_subplan_2500");
-                                update = true;
+                                if (userData?.roles.Contains("patreon_role_subplan_300")
+                                    || userData?.roles.Contains("patreon_role_subplan_700")
+                                    || userData?.roles.Contains("patreon_role_subplan_2500")))
+                                {
+                                    userData?.roles.Remove("patreon_role_subplan_300");
+                                    userData?.roles.Remove("patreon_role_subplan_700");
+                                    userData?.roles.Remove("patreon_role_subplan_2500");
+                                    update = true;
+                                }
+
+                                string userName = FindGitHubUserName(user.meta_data);
+                                if (userName != null)
+                                {
+                                    GitHubRemove(userName, ghClient, teamMembers, teamId);
+                                }
                             }
 
                             if (update)
@@ -118,6 +186,10 @@ namespace retrospy_patreon_wordpress_sync
                                 response = wcHttpClient.PutAsync("/wp-json/wp/v2/users/" + user.id, s).Result;
                             }
                             break;
+                        }
+                        else if (data.key.ToString() == "github_login")
+                        {
+                            int i = 0;
                         }
                     }
 
@@ -129,6 +201,12 @@ namespace retrospy_patreon_wordpress_sync
                             responseStr = stream.ReadToEnd();
                         }
                         userData = JsonConvert.DeserializeObject(responseStr);
+
+                        string userName = FindGitHubUserName(user.meta_data);
+                        if (userName != null)
+                        {
+                            GitHubRemove(userName, ghClient, teamMembers, teamId);
+                        }
 
                         if (userData?.roles.Contains("patreon_role_subplan_300")
                            || userData?.roles.Contains("patreon_role_subplan_700")

@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Octokit" Version="9.1.0" />
     <PackageReference Include="Patreon.Net" Version="1.0.2" />
   </ItemGroup>
 
