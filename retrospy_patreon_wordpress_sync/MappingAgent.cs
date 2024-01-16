@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Octokit;
 using Patreon.Net;
+using Patreon.Net.Models;
 using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -42,7 +43,7 @@ namespace retrospy_patreon_wordpress_sync
             return null;
         }
 
-        private void GitHubAdd(string username, GitHubClient client, IReadOnlyList<User> teamMembers, int teamId)
+        private void GitHubAdd(string username, GitHubClient client, IReadOnlyList<Octokit.User> teamMembers, int teamId)
         {
             foreach(var user in teamMembers)
             {
@@ -55,7 +56,7 @@ namespace retrospy_patreon_wordpress_sync
             client.Organization.Team.AddOrEditMembership(teamId, username, new UpdateTeamMembership(TeamRole.Member));
         }
 
-        private void GitHubRemove(string username, GitHubClient client, IReadOnlyList<User> teamMembers, int teamId)
+        private void GitHubRemove(string username, GitHubClient client, IReadOnlyList<Octokit.User> teamMembers, int teamId)
         {
             foreach (var user in teamMembers)
             {
@@ -229,33 +230,33 @@ namespace retrospy_patreon_wordpress_sync
             string pageContent = string.Empty;
             foreach(var name in supporterNames)
             {
-                if (count % 3 == 0)
+                if (count % 4 == 0)
                 {
-                    pageContent += "<tr>\n";
+                    pageContent += @"<tr>";
                 }
 
-                pageContent += "<td align=\"CENTER\">\n<h5>" + name + "</h5>\n</td>";
+                pageContent += @"<td align='CENTER'><h5>" + name + "</h5></td>";
 
-                if (count % 3 == 0)
+                if ((count + 1) % 4 == 0)
                 {
-                    pageContent += "</tr>\n";
+                    pageContent += @"</tr>";
                 }
 
                 count++;
             }
 
-            while (count % 3 != 0)
+            while (count % 4 != 0)
             {
-                if (count % 3 == 0)
+                if (count % 4 == 0)
                 {
-                    pageContent += "<tr>\n";
+                    pageContent += @"<tr>";
                 }
 
-                pageContent += "<td align=\"CENTER\">\n<h5>Placeholder</h5>\n</td>";
+                pageContent += @"<td align='CENTER'><h5>Placeholder</h5></td>";
 
-                if (count % 3 == 0)
+                if ((count + 1) % 4 == 0)
                 {
-                    pageContent += "</tr>\n";
+                    pageContent += @"</tr>";
                 }
 
                 count++;
@@ -263,12 +264,13 @@ namespace retrospy_patreon_wordpress_sync
 
             string finalContent = supporterContentStart + pageContent + supporterContentEnd;
 
-
-          //  < tr >\n < td align =\"CENTER\">\n<h5>40wattrange</h5>\n</td>\n<td align=\"CENTER\">\n<h5> Future Supporter 2</h5>\n</td>\n<td align=\"CENTER\">\n<h5> Future Supporter 3</h5>\n</td>\n</tr>\n
+            var contentJson = new StringContent("{ \"content\" : \"" + finalContent + "\" }");
+            contentJson.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+            var putResponse = wcHttpClient.PostAsync("/wp-json/wp/v2/pages/1208", contentJson).Result;
         }
 
-        private string supporterContentStart = "<p style=\"text-align: center;\">Version: <br />\nBuild Timestamp: </p>\n<h3 style=\"text-align: center;\">Supported By</h3>\n<table border=\"0\" width=\"100%\">\n<tbody>\n";
-        private string supporterContentEnd = "</tbody>\n</table>\n<p style=\"text-align: center;\"><img /><a href =\"https://patreon.com/retrospydisplay\"><img loading=\"lazy\" decoding=\"async\" class=\"alignnone size-medium wp-image-1207\" src=\"https://retro-spy.com/wp-content/uploads/2023/01/PatreonButton-300x82.png\" alt=\"\" width=\"300\" height=\"82\" srcset=\"https://retro-spy.com/wp-content/uploads/2023/01/PatreonButton-300x82.png 300w, https://retro-spy.com/wp-content/uploads/2023/01/PatreonButton.png 374w\" sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n";
+        private string supporterContentStart = "<p style='text-align: center;'>Version: [urlparam param=\\\"version\\\" /]<br/>Build Timestamp: [urlparam param=\\\"buildtime\\\" /]</p><h3 style='text-align: center;'>Supported By</h3><table border='0' width='100%' align='center'><tbody>";
+        private string supporterContentEnd = "</tbody></table><p style='text-align: center;'><img/><a href ='https://patreon.com/retrospydisplay'><img loading='lazy' decoding='async' class='alignnone size-medium wp-image-1207' src='https://retro-spy.com/wp-content/uploads/2023/01/PatreonButton-300x82.png' alt='' width='300' height='82' srcset='https://retro-spy.com/wp-content/uploads/2023/01/PatreonButton-300x82.png 300w, https://retro-spy.com/wp-content/uploads/2023/01/PatreonButton.png 374w' sizes='(max-width: 300px) 100vw, 300px' /></a></p>";
     }
 
 }
