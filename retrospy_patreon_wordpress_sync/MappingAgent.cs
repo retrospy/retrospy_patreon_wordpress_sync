@@ -261,6 +261,9 @@ namespace retrospy_patreon_wordpress_sync
                 count++;
             }
 
+            string finalContent = supporterContentStart + pageContent + supporterContentEnd;
+
+
           //  < tr >\n < td align =\"CENTER\">\n<h5>40wattrange</h5>\n</td>\n<td align=\"CENTER\">\n<h5> Future Supporter 2</h5>\n</td>\n<td align=\"CENTER\">\n<h5> Future Supporter 3</h5>\n</td>\n</tr>\n
         }
 
