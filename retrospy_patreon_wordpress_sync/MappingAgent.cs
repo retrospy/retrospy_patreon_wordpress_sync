@@ -129,7 +129,13 @@ namespace retrospy_patreon_wordpress_sync
                             {
                                 if (patron.Email == data.value.data.attributes.email.ToString() && patron.PatronStatus == Patreon.Net.Models.Member.PatronStatusValue.ActivePatron)
                                 {
-                                    supporterNames.Add(data.value.data.attributes.vanity.ToString());
+                                    string? supporterName = data.value.data.attributes.vanity.ToString();
+                                    if (string.IsNullOrEmpty(supporterName))
+                                    {
+                                        supporterName = data.value.data.attributes.full_name.ToString();
+                                    }
+
+                                    supporterNames.Add(supporterName);
                                     
                                     var githubName = FindGitHubUserName(user.meta_data);
                                     if (githubName != null)
